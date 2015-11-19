@@ -35,12 +35,15 @@ uint32_t dummy;
 #endif 
 
 static OS_STK startup_task_stk[STARTUP_TASK_STK_SIZE];
+
 int main(void)
 {  
   BSP_Init();
   OSInit();
-  OSTaskCreate(Task_lcd,(void *)0, 
+  OSTaskCreate(Task_Start,(void *)0, 
                &startup_task_stk[STARTUP_TASK_STK_SIZE-1], STARTUP_TASK_PRIO); 
+  
+  OSTimeSet(0);
   OSStart(); 
   return 0;
   

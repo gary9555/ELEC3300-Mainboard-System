@@ -1,13 +1,19 @@
 #include "includes.h"
 
-void Task_lcd(void *p_arg)
+OS_STK task_led_stk[TASK_LED_STK_SIZE];
+
+void Task_Start(void *p_arg)
 {
     (void)p_arg;   
     
     char hex[]="0123456789ABCDEF";
     int  cel, sw, a0, a1, a2, a3=0;
     float num, mv;
-	
+    
+    // create task2
+    OSTaskCreate(Task_LED,(void *)0,  
+                 &task_led_stk[TASK_LED_STK_SIZE-1], TASK_LED_PRIO);
+    
     while (1){
       
       //  OSTimeDlyHMSM(0, 0,0,100,OS_OPT_TIME_HMSM_STRICT,&err);	//?иои║б└б┴ииии?100ms
@@ -73,6 +79,21 @@ void Task_lcd(void *p_arg)
       OSTimeDlyHMSM(0, 0,1,0);
        
     }
+}
+
+
+void Task_LED(void *p_arg){
+  
+  (void)p_arg;
+  
+  while(1){
+    
+      GPIOF->BSRR=GPIO_Pin_9;
+      OSTimeDlyHMSM(0, 0,0,500);
+      GPIOF->BRR=GPIO_Pin_9;  
+      OSTimeDlyHMSM(0, 0,0,500);
+  }
+   
 }
 
 /*

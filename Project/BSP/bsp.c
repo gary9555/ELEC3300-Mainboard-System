@@ -83,6 +83,13 @@ void GPIO_Configuration(void)
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD; // attention
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_Init(GPIOA, &GPIO_InitStructure);
+  
+  // PF9 for led toggling
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOF, ENABLE);
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; // attention
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_Init(GPIOF, &GPIO_InitStructure);
 
 }
 
