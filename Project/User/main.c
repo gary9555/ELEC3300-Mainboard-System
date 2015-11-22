@@ -27,14 +27,12 @@ void RCC_Configuration(void);
 void GPIO_Configuration(void);
 
 /* Private functions ---------------------------------------------------------*/
-void LongDelay(u32 nCount);
-void Delayms(u32 m);
-
 uint32_t dummy;
 
 #endif 
 
 static OS_STK startup_task_stk[STARTUP_TASK_STK_SIZE];
+void Task_Start(void *p_arg);
 
 int main(void)
 {  
@@ -46,9 +44,6 @@ int main(void)
   OSTimeSet(0);
   OSStart(); 
   return 0;
-  
-  
-  
   
 #if 0
   /* Setup the microcontroller system. Initialize the Embedded Flash Interface,  
@@ -110,7 +105,7 @@ int main(void)
   /* Check the end of ADC1 calibration */
   while(ADC_GetCalibrationStatus(ADC1));
   
-  USART1_Config();
+  USART_Config(57600,19200);
   NVIC_Configuration();
  // printf("\r\n Hi Professor Tim Woo \r\n");
   //Delayms(429496729);
@@ -185,17 +180,3 @@ int main(void)
    
 #endif
 }
-
-void LongDelay(u32 nCount)
-{
-  for(; nCount != 0; nCount--);
-}
-
-void Delayms(u32 m)
-{
-  u32 i;
-  
-  for(; m != 0; m--)	
-       for (i=0; i<50000; i++);
-}
-

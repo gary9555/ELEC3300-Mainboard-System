@@ -127,12 +127,17 @@ void PendSV_Handler(void)
   * @param  None
   * @retval None
   */
+ 
+
+void OSIntEnter(void); 	 
+void OSTimeTick(void);	         
+void OSIntExit(void);	        
+
 void SysTick_Handler(void)
 {
   OSIntEnter(); 	 //  used to count the interrupt nested layer number, number+1
   OSTimeTick();	         //  to record the time 
   OSIntExit();	         //  nested layer-1, activate the task commanding before exiting interrupt
-
 }
 
 /******************************************************************************/

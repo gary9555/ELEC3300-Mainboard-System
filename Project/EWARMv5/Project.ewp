@@ -209,7 +209,7 @@
         <option>
           <name>CCAllowList</name>
           <version>1</version>
-          <state>1001010</state>
+          <state>1111111</state>
         </option>
         <option>
           <name>CCDebugInfo</name>
@@ -311,7 +311,7 @@
         </option>
         <option>
           <name>CCOptLevel</name>
-          <state>2</state>
+          <state>3</state>
         </option>
         <option>
           <name>CCOptStrategy</name>
@@ -320,7 +320,7 @@
         </option>
         <option>
           <name>CCOptLevelSlave</name>
-          <state>2</state>
+          <state>3</state>
         </option>
         <option>
           <name>CompilerMisraRules98</name>
@@ -802,9 +802,6 @@
     <name>APP</name>
     <file>
       <name>$PROJ_DIR$\..\APP\app.c</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\..\APP\app.h</name>
     </file>
     <file>
       <name>$PROJ_DIR$\..\APP\app_cfg.h</name>

@@ -1,84 +1,55 @@
 #include "includes.h"
 
-OS_STK task_led_stk[TASK_LED_STK_SIZE];
+
+/*
+*********************************************************************************************************
+*                                      Task Processes
+*********************************************************************************************************
+*/
+void Task_Start(void *p_arg);
+static void Task_Comm(void *p_arg);
+static void Task_LED(void *p_arg);
+
+
+
+static OS_STK task_led_stk[TASK_LED_STK_SIZE];
+static OS_STK task_comm_stk[TASK_COMM_STK_SIZE];
 
 void Task_Start(void *p_arg)
 {
     (void)p_arg;   
     
-    char hex[]="0123456789ABCDEF";
-    int  cel, sw, a0, a1, a2, a3=0;
-    float num, mv;
+    //OS_CPU_SysTickInit(); 
     
-    // create task2
+    // create task communication between the terminal
+    OSTaskCreate(Task_Comm,(void *)0,  
+                 &task_comm_stk[TASK_COMM_STK_SIZE-1], TASK_COMM_PRIO);
+    
+    
+    // create task led
     OSTaskCreate(Task_LED,(void *)0,  
                  &task_led_stk[TASK_LED_STK_SIZE-1], TASK_LED_PRIO);
     
-    while (1){
-      
-      //  OSTimeDlyHMSM(0, 0,0,100,OS_OPT_TIME_HMSM_STRICT,&err);	//?иои║б└б┴ииии?100ms
-      ADC_SoftwareStartConvCmd(ADC1, ENABLE);
-      uint16_t value=ADC_GetConversionValue(ADC1);
-      
-      if((value>246) & (sw!=0))
-      {
-        GPIOC->BRR = GPIO_Pin_0;
-        sw=0;
-      }
-      else if((value<82) & (sw=0))
-      {
-        GPIOC->BSRR = GPIO_Pin_0;
-        sw=1;
-      }
-        
-      LCD_DrawChar(0x2, 16, 'T');
-      LCD_DrawChar(0x2, 16+8, 'E');
-      LCD_DrawChar(0x2, 16+16, 'P');
-      LCD_DrawChar(0x2, 16+24, ' ');
-      LCD_DrawChar(0x2, 16+32, ':');
-      
-      num= (float)value;
-      mv= (num)*(5000.0/4096.0);
-      
-      cel= (int)(mv);
-      
-      printf("\r\nCurrent Temperature: %.1f degrees celcius\r\n", mv/10.0);
-     
-      a3=cel%10;
-      cel=cel/10;
-      a2=cel%10;
-      cel=cel/10;
-      a1=cel%10;
-      cel=cel/10;
-      a0=cel%10;
-    
-       /*
-      a3=value%10;
-      value=value/10;
-      a2=value%10;
-      value=value/10;
-      a1=value%10;
-      value=value/10;
-      a0=value%10;
-        */
-      LCD_DrawChar(0x2, 16+40, hex[a1]);
-      LCD_DrawChar(0x2, 16+48, hex[a2]);
-      LCD_DrawChar(0x2, 16+56, '.');
-      LCD_DrawChar(0x2, 16+64, hex[a3]);
-      LCD_DrawChar(0x2, 16+72, '^');
-      LCD_DrawChar(0x2, 16+80, 'C');
-  
-          
-      OSTimeDlyHMSM(0, 0,1,0);
-      
-      printf("\r\n Hi Professor Tim Woo \r\n");
-      OSTimeDlyHMSM(0, 0,1,0);
-      printf("\r\n Hi Fox \r\n");
-      OSTimeDlyHMSM(0, 0,1,0);
-      printf("\r\n Hi Gary \r\n");
-      OSTimeDlyHMSM(0, 0,1,0);
-       
+    while (1){   
+      OSTimeDlyHMSM(0, 0,10,0);	// don't need to do anything    
     }
+}
+
+
+void Task_Comm(void *p_arg){
+   
+  (void)p_arg;
+  
+  while(1){
+    printf("\r\n Hi Professor Tim Woo \r\n");
+    OSTimeDlyHMSM(0, 0,1,0);
+    printf("\r\n Hi Fox \r\n");
+    OSTimeDlyHMSM(0, 0,1,0);
+    printf("\r\n Hi Gary \r\n");
+    OSTimeDlyHMSM(0, 0,1,0);   
+  }
+  
+  
 }
 
 

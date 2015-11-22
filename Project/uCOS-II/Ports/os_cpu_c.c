@@ -351,6 +351,8 @@ void  OS_CPU_SysTickHandler (void)
 
 void  OS_CPU_SysTickInit (void)
 {
+    
+  
     INT32U  cnts;
 
 
@@ -363,4 +365,5 @@ void  OS_CPU_SysTickInit (void)
     OS_CPU_CM3_NVIC_ST_CTRL  |= OS_CPU_CM3_NVIC_ST_CTRL_CLK_SRC | OS_CPU_CM3_NVIC_ST_CTRL_ENABLE;
                                                  /* Enable timer interrupt.                            */
     OS_CPU_CM3_NVIC_ST_CTRL  |= OS_CPU_CM3_NVIC_ST_CTRL_INTEN;
+
 }
