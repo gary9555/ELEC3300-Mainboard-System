@@ -22,6 +22,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h"
+#include "includes.h"
 
 /** @addtogroup STM32F10x_StdPeriph_Examples
   * @{
@@ -147,6 +148,32 @@ void SysTick_Handler(void)
 /*  file (startup_stm32f10x_xx.s).                                            */
 /******************************************************************************/
 
+extern u8 gRsLength;
+extern u8 gRsBuf[9];  // serial receiver buffer for FP
+extern u8 mRsLength;
+//extern u8 mRsBuf[196];   // serial receiver buffer for communication with terminal
+
+void USART1_IRQHandler(void)
+{  	
+  if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)
+  { 
+   // mRsBuf[mRsLength] = USART_ReceiveData(USART1);	
+    //printf("%c",mRsBuf[mRsLength]);
+    //++mRsLength;
+    
+  }
+	
+}
+
+void USART2_IRQHandler(void)
+{
+  if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET)
+  {	
+    gRsBuf[gRsLength] = USART_ReceiveData(USART2);	
+    printf("%c",gRsBuf[gRsLength]);
+    ++gRsLength;
+  }
+}
 /**
   * @brief  This function handles PPP interrupt request.
   * @param  None
