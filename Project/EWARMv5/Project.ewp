@@ -818,9 +818,6 @@
     <file>
       <name>$PROJ_DIR$\..\BSP\bsp.h</name>
     </file>
-    <file>
-      <name>$PROJ_DIR$\..\BSP\lcd.c</name>
-    </file>
   </group>
   <group>
     <name>CMSIS</name>
@@ -918,10 +915,19 @@
   <group>
     <name>User</name>
     <file>
+      <name>$PROJ_DIR$\..\User\cursor.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\User\DS18B20.c</name>
+    </file>
+    <file>
       <name>$PROJ_DIR$\..\User\fingerprint.c</name>
     </file>
     <file>
       <name>$PROJ_DIR$\..\User\includes.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\User\lcd.c</name>
     </file>
     <file>
       <name>$PROJ_DIR$\..\User\main.c</name>

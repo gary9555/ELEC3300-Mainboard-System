@@ -40,6 +40,13 @@ void DebugMon_Handler(void);
 void PendSV_Handler(void);
 void SysTick_Handler(void);
 
+
+// ------ name defined in startup_stm32f10x_hd.s
+
+void EXTI9_5_IRQHandler(void);
+void EXTI15_10_IRQHandler(void);
+void EXTI0_IRQHandler(void);
+
 #endif /* __STM32F10x_IT_H */
 
 /******************* (C) COPYRIGHT 2009 STMicroelectronics *****END OF FILE****/

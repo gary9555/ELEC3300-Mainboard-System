@@ -14,11 +14,11 @@ void BSP_Init(void){
   RCC_Configuration();
   GPIO_Configuration();
   
-  ADC_Configuration();
+  //ADC_Configuration();
     
   // init uart
   NVIC_Configuration();
-  
+  //ds18b20_start();
   USART_Config(57600,19200);
 }
 
@@ -40,7 +40,7 @@ void RCC_Init(void){
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB |
                            RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD |
                            RCC_APB2Periph_GPIOE |RCC_APB2Periph_GPIOF | 
-                           RCC_APB2Periph_GPIOG, ENABLE);  
+                           RCC_APB2Periph_GPIOG, DISABLE);  
   
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_All;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
@@ -112,7 +112,20 @@ void GPIO_Configuration(void)
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; // attention
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOF, &GPIO_InitStructure);
-
+    
+    // door lock 
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; // attention
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+    
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; // attention
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+    
 }
 
 void RCC_Configuration(void)

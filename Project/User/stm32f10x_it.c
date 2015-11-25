@@ -21,8 +21,9 @@
   */ 
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f10x_it.h"
+
 #include "includes.h"
+
 
 /** @addtogroup STM32F10x_StdPeriph_Examples
   * @{
@@ -188,6 +189,127 @@ void USART2_IRQHandler(void)
     ++gRsLength;
   }
 }
+
+#if 0
+int check_count;
+void EXTI0_IRQHandler(void)
+{
+  char hex[]="0123456789ABCDEF";
+  // int cursor_pos = 0, detect= 0;
+  int h1=0, h0=0, min0=0, min1=0;
+   if(EXTI_GetITStatus(EXTI_Line0) != RESET)
+  {
+
+/*       WAKEUP KEY (i.e. PA.0) is pressed.                  */
+   
+    LCD_DrawChar(2, 16, '0');
+    LCD_DrawChar(2, 24, '0');
+    LCD_DrawChar(2, 32, ':');
+    LCD_DrawChar(2, 40, '0');
+    LCD_DrawChar(2, 48, '5');
+    LCD_DrawChar(2, 56, ' ');
+    LCD_DrawLine(33, 16, 33, 23);
+    LCD_DrawLine(32, 16, 32, 23);
+    
+    TIM_Cmd(TIM4, ENABLE);
+    OSTimeDlyHMSM(0, 0,2,0);   
+    TIM_Cmd(TIM4, DISABLE);
+    
+    while (1)
+    {
+      if((~(GPIOB->IDR>>13))&0x01)  
+      {
+        while((~(GPIOB->IDR>>13))&0x01);
+        left();
+      }
+      else if ((~(GPIOB->IDR>>12)&0x01))
+      {
+        while((~(GPIOB->IDR>>12))&0x01);
+        right();
+      }
+      else if ((~(GPIOB->IDR>>14)&0x01))
+      {
+        while((~(GPIOB->IDR>>14))&0x01);
+        up();
+      }
+      else if ((~(GPIOB->IDR>>15)&0x01))
+      {
+        while((~(GPIOB->IDR>>15))&0x01);
+        down();
+      }
+      else if ((~(GPIOB->IDR>>11)&0x01))
+      {
+        while((~(GPIOB->IDR>>11))&0x01);
+        set();
+        LCD_DrawLine(33, 16, 33, 23);
+        LCD_DrawLine(32, 16, 32, 23);
+        h1= detect_number();
+        right();
+        h0= detect_number();
+        right();
+        min1= detect_number();
+        right();
+        min0= detect_number();
+        set();
+        break;
+      }
+    }  
+    
+    /*
+    LCD_DrawChar(5, 16, hex[h1]);
+    LCD_DrawChar(5, 24, hex[h0]);
+    LCD_DrawChar(5, 32, ':');
+    LCD_DrawChar(5, 40, hex[min1]);
+    LCD_DrawChar(5, 48, hex[min0]);
+    */
+    
+    SysTick_Init();
+    while(1)
+    {
+      SysTickDelay_us(1000000-8559);
+      if(min0==0)
+      {
+        min0= 9;
+        if(min1==0)
+        {
+         min1= 5; 
+         if(h0==0)
+         {
+           h0= 9;
+           if(h1==0)
+           {
+             // finish count
+             check_count= 1;
+             break;
+           }
+           else
+             h1--;
+         }
+         else
+           h0--;
+        }
+        else
+          min1--;
+      }
+      else
+        min0--;
+      LCD_EraseChar(2, 48);
+      LCD_DrawChar(2, 48, hex[min0]);
+      LCD_EraseChar(2, 40);
+      LCD_DrawChar(2, 40, hex[min1]);
+      LCD_EraseChar(2, 24);
+      LCD_DrawChar(2, 24, hex[h0]);
+      LCD_EraseChar(2, 16);
+      LCD_DrawChar(2, 16, hex[h1]);
+    }
+    
+    //  LCD_DrawChar(5, 88, 'G');  // represent it finished
+
+   // Clear the Key Button EXTI line pending bit 
+    EXTI_ClearITPendingBit(EXTI_Line0);
+  }  
+}
+#endif
 /**
   * @brief  This function handles PPP interrupt request.
   * @param  None

@@ -38,13 +38,15 @@ static u8 num_user;
 void Task_Start(void *p_arg);
 static void Task_Manager(void *p_arg);    // in charge of the states and commands 
 static void Task_Update(void *p_arg);
-static void Task_LED(void *p_arg);        // breathing light
+static void Task_Temp(void *p_arg);       // temperature management task
 static void Task_FP(void *p_arg);         // fingerprint
+static void Task_LED(void *p_arg);        // breathing light
 
 
-
+// stack
 static OS_STK task_led_stk[TASK_LED_STK_SIZE];
 static OS_STK task_update_stk[TASK_UPDATE_STK_SIZE];
+static OS_STK task_temp_stk[TASK_TEMP_STK_SIZE];
 static OS_STK task_fp_stk[TASK_FP_STK_SIZE];
 static OS_STK task_manager_stk[TASK_MANAGER_STK_SIZE];
 
@@ -64,6 +66,10 @@ void Task_Start(void *p_arg){
     // create task communication between the terminal
     OSTaskCreate(Task_Update,(void *)0,  
                  &task_update_stk[TASK_UPDATE_STK_SIZE-1], TASK_UPDATE_PRIO);
+    
+    // create task temperature
+    //OSTaskCreate(Task_Temp,(void *)0,  
+      //           &task_temp_stk[TASK_TEMP_STK_SIZE-1], TASK_TEMP_PRIO);
        
     // create task led
     OSTaskCreate(Task_LED,(void *)0,  
@@ -110,7 +116,7 @@ void Task_Manager(void *p_arg){
         case LOG_IN:
           
           if(!strncmp(mRsBuf,"#CM#",4)){
-            if(cmdLength==6){
+            if(cmdLength>5){
               switch(mRsBuf[4]){
                 // air-con
                 case 'A':   
@@ -178,27 +184,94 @@ void Task_Update(void *p_arg){
    
   (void)p_arg;
   
-  while(1){
+  while(1){    
     if(sysState==1){
       printf("#IF#T%d\r\n", temperature);
-      printf("#IF#D%d\r\n", doorStatus);
+      if(!DOOR_OPEN){
+        printf("#IF#D1\r\n");
+      }
+      else{
+        printf("#IF#D0\r\n");
+      } 
     }
     printf("#IF#S%d\r\n", sysState);
     OSTimeDlyHMSM(0, 0,2,0);         
   }
 }
 
-u8 key_scan(void){
+static void Task_Temp(void *p_arg){
   
-    if(KEY2||KEY4||JOY_SEL)
-    {
-        //delay();
-        if(KEY2) return 1;
-        if(KEY4) return 2;
-        if(JOY_SEL) return 3;
-    }
-    return 0;
+  
+   (void)p_arg;
+   char hex[]="0123456789ABCDEF";
+   unsigned short dex[]={0,1,2,3,4,5,6,7,8,9};
+   unsigned short val=0, valh=0, vall= 0;
+   int sw=0, a0=0, a1=0, a2=0, a3=0, celi=0;
+   float cel=0.0, celr= 0.0;
+  
+   //ds18b20_start();
+   
+   while(1){
+     
+     // val = ds18b20_read();
+      LCD_EraseScreen();
+      LCD_DrawChar(0x2, 16, 'T');
+      LCD_DrawChar(0x2, 16+8, 'E');
+      LCD_DrawChar(0x2, 16+16, 'P');
+      LCD_DrawChar(0x2, 16+24, ' ');
+      LCD_DrawChar(0x2, 16+32, ':');
+      
+      valh= val<<1;
+      valh= valh>>9;
+      vall= val<<12;
+      vall= vall>>12;
+      vall= dex[vall];
+      cel= valh + vall*0.1;  // real temperature
+      celr= cel;
+      cel= cel*10;
+      celi= (int)cel;
+      
+      a0=celi%10;
+      celi=celi/10;
+      a1=celi%10;
+      celi=celi/10;
+      a2=celi%10;    
+      
+      /*
+      a0=val%10;
+      val=val/10;
+      a1=val%10;
+      val=val/10;
+      a2=val%10;
+      val=val/10;
+      a3=val%10;
+      */
+      
+      LCD_DrawChar(0x2, 16+40, hex[a2]);
+      LCD_DrawChar(0x2, 16+48, hex[a1]);
+      LCD_DrawChar(0x2, 16+56, '.');
+      LCD_DrawChar(0x2, 16+64, hex[a0]);
+      LCD_DrawChar(0x2, 16+72, ' ');
+      LCD_DrawChar(0x2, 16+80, 'C');
+    /*  
+      if((celr>30.0) && (sw!=0))
+      {
+        LED7_OFF;
+        sw=0;
+      }
+      else if((celr<29.0) && (sw==0))
+      {
+        LED7_ON;
+        sw=1;
+      }
+      else;
+      */
+      OSTimeDlyHMSM(0, 0,0,200);
+   }
+  
+  
 }
+
 
 // deals with the fingerprint function
 void Task_FP(void *p_arg){
@@ -256,6 +329,11 @@ void Task_FP(void *p_arg){
               switch(VerifyUser()){
                   case ACK_SUCCESS:	
                       printf("\r\nVerification successful!\r\n");
+                      // unlock , then lock the door after 5 seconds if it is closed
+                      DOOR_UNLOCK;
+                      OSTimeDlyHMSM(0, 0,5,0);
+                      while(!DOOR_OPEN);
+                      DOOR_LOCK;
                       LED5_ON;	
                       OSTimeDlyHMSM(0, 0,0,500);
                       LED5_OFF;
