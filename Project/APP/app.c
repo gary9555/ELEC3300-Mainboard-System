@@ -24,7 +24,11 @@ u8 cmdReadyFlag;     // set to 1 when command is ready to be processed by manage
 static u8 fpOperation;  // operation for the fingerprint module
 static u8 sysState;    //state of the system
 static u8 attempts;    // number of incorrect attempts    
-
+static u8 ac_on;        // boolean to control the temperature
+static u8 curtain_open;  // boolean to control temperature
+static u8 temperature;  // temperature value
+static u8 doorStatus;
+static u8 num_user;
 
 /*
 *********************************************************************************************************
@@ -33,13 +37,14 @@ static u8 attempts;    // number of incorrect attempts
 */
 void Task_Start(void *p_arg);
 static void Task_Manager(void *p_arg);    // in charge of the states and commands 
-static void Task_Comm(void *p_arg);
+static void Task_Update(void *p_arg);
 static void Task_LED(void *p_arg);        // breathing light
 static void Task_FP(void *p_arg);         // fingerprint
 
 
+
 static OS_STK task_led_stk[TASK_LED_STK_SIZE];
-static OS_STK task_comm_stk[TASK_COMM_STK_SIZE];
+static OS_STK task_update_stk[TASK_UPDATE_STK_SIZE];
 static OS_STK task_fp_stk[TASK_FP_STK_SIZE];
 static OS_STK task_manager_stk[TASK_MANAGER_STK_SIZE];
 
@@ -57,8 +62,8 @@ void Task_Start(void *p_arg){
                  &task_manager_stk[TASK_MANAGER_STK_SIZE-1], TASK_MANAGER_PRIO);
     
     // create task communication between the terminal
-    OSTaskCreate(Task_Comm,(void *)0,  
-                 &task_comm_stk[TASK_COMM_STK_SIZE-1], TASK_COMM_PRIO);
+    OSTaskCreate(Task_Update,(void *)0,  
+                 &task_update_stk[TASK_UPDATE_STK_SIZE-1], TASK_UPDATE_PRIO);
        
     // create task led
     OSTaskCreate(Task_LED,(void *)0,  
@@ -84,14 +89,14 @@ void Task_Manager(void *p_arg){
       switch(sysState){
         case LOG_OFF:
           if(!strncmp(mRsBuf,"#LG#",4)){
-            if(!strncmp(mRsBuf,"#LG#gary/123456",15)){
+            if(!strncmp(mRsBuf+4,"gary/123456",11)){
               sysState=LOG_IN;
-              printf("Log in success!\r\n");
+              printf("#LG#\r\n");
             }
             else{
               attempts++;  
               if(attempts==3){
-                sysState=SUSPEND;
+              //  sysState=SUSPEND;
                 printf("Suspended...\r\n");
               }
               else
@@ -103,22 +108,59 @@ void Task_Manager(void *p_arg){
           }
           break;
         case LOG_IN:
-          if(!strncmp(mRsBuf,"#LG#",4))
+          
+          if(!strncmp(mRsBuf,"#CM#",4)){
+            if(cmdLength==6){
+              switch(mRsBuf[4]){
+                // air-con
+                case 'A':   
+                  if(mRsBuf[5]=='0')
+                    ac_on=0;
+                  else if(mRsBuf[5]=='1')
+                    ac_on=1;
+                  else
+                    printf("cmd wrong ac\r\n");
+                  break;
+                // fingerprint
+                case 'F':  // fingerprint
+                  if(mRsBuf[5]=='1')
+                    fpOperation = 1;
+                  else if(mRsBuf[5]=='2')
+                    fpOperation = 2;
+                  else if(mRsBuf[5]=='3')
+                    fpOperation = 3;
+                  else
+                    printf("cmd wrong fp\r\n");
+                  break;
+                // curtain
+                case 'C':  
+                  if(mRsBuf[5]=='0')
+                    curtain_open=0;
+                  else if(mRsBuf[5]=='1')
+                    curtain_open=1;
+                  else
+                    printf("cmd wrong ac\r\n");
+                  break;
+                default:
+                  printf("cmd wrong 2\r\n");
+                  break;
+              }
+            }
+          }
+          else if(!strncmp(mRsBuf,"#LG#",4))
             printf("Already Logged in\r\n");
+          else if(!strncmp(mRsBuf,"#LF#",4)){
+            sysState=LOG_OFF;
+            printf("#LF#\r\n");
+          }
+          else{printf("cmd wrong\r\n");}
+            
+                      
           break;
         case SUSPEND:
           break;
       }
-      
-        
-      if(mRsBuf[0]=='1')
-        fpOperation=1;
-      else if(mRsBuf[0]=='2')
-        fpOperation=2;
-      else if(mRsBuf[0]=='3')
-        fpOperation=3;
-      else;
-        //for(i=0;i<cmdLength+1;i++)
+       //for(i=0;i<cmdLength+1;i++)
           //printf("%c",mRsBuf[i]);
           
       
@@ -132,21 +174,17 @@ void Task_Manager(void *p_arg){
 }
 
 // deal with RF communication
-void Task_Comm(void *p_arg){
+void Task_Update(void *p_arg){
    
   (void)p_arg;
   
   while(1){
-    /*
-    printf("\r\n Hi Professor Tim Woo \r\n");
-    OSTimeDlyHMSM(0, 0,1,0);
-    printf("\r\n Hi Fox \r\n");
-    OSTimeDlyHMSM(0, 0,1,0);
-    printf("\r\n Hi Gary \r\n");
-    OSTimeDlyHMSM(0, 0,1,0);   
-    */
-    OSTimeDlyHMSM(0, 0,10,0);
-    
+    if(sysState==1){
+      printf("#IF#T%d\r\n", temperature);
+      printf("#IF#D%d\r\n", doorStatus);
+    }
+    printf("#IF#S%d\r\n", sysState);
+    OSTimeDlyHMSM(0, 0,2,0);         
   }
 }
 
@@ -167,7 +205,7 @@ void Task_FP(void *p_arg){
   
     (void)p_arg;
 #ifdef FP   
-    int i = 5;
+    
     
     SetcompareLevel(5);
     printf("Compare level is %d\r\n", GetcompareLevel());
@@ -180,9 +218,9 @@ void Task_FP(void *p_arg){
         {
             case 1:
                 printf("\r\nUser:%d\r\n",GetUserCount());
-                switch(AddUser(i)){
+                switch(AddUser(num_user+1)){
                     case ACK_SUCCESS:
-                        i++;
+                        num_user++;
                         printf("\r\nFingerprint added successfully!\r\n");
                         LED5_ON;	
                         OSTimeDlyHMSM(0, 0,0,500);
@@ -253,6 +291,7 @@ void Task_FP(void *p_arg){
               break;                                             
             case 3:
               ClearAllUser();
+              num_user=0;
               printf("\r\nAll users have been cleared!\r\n");
               break;
         }
