@@ -1,22 +1,50 @@
 #include "includes.h"
 
 #define FP
+
+#define LOG_OFF   0
+#define LOG_IN    1
+#define SUSPEND   2
+/*
+*********************************************************************************************************
+*                                      Global variables
+*********************************************************************************************************
+*/
+u8 mRsLength;
+u8 mRsBuf[50];   // serial receiver buffer for communication with terminal
+u8 cmdLength;
+u8 cmdReadyFlag;     // set to 1 when command is ready to be processed by manager task
+
+
+/*
+*********************************************************************************************************
+*                                      Static variables
+*********************************************************************************************************
+*/
+static u8 fpOperation;  // operation for the fingerprint module
+static u8 sysState;    //state of the system
+static u8 attempts;    // number of incorrect attempts    
+
+
 /*
 *********************************************************************************************************
 *                                      Task Processes
 *********************************************************************************************************
 */
 void Task_Start(void *p_arg);
-static void Task_Manager(void *p_arg);
+static void Task_Manager(void *p_arg);    // in charge of the states and commands 
 static void Task_Comm(void *p_arg);
-static void Task_LED(void *p_arg);
-static void Task_FP(void *p_arg);
+static void Task_LED(void *p_arg);        // breathing light
+static void Task_FP(void *p_arg);         // fingerprint
 
 
 static OS_STK task_led_stk[TASK_LED_STK_SIZE];
 static OS_STK task_comm_stk[TASK_COMM_STK_SIZE];
 static OS_STK task_fp_stk[TASK_FP_STK_SIZE];
 static OS_STK task_manager_stk[TASK_MANAGER_STK_SIZE];
+
+// door open
+// air conditioner
 
 void Task_Start(void *p_arg){
   
@@ -50,10 +78,55 @@ void Task_Start(void *p_arg){
 void Task_Manager(void *p_arg){
 
   (void)p_arg;
-  
+  u8 i;
   while(1){
-    OSTimeDlyHMSM(0, 0,2,0);
-    
+    if(cmdReadyFlag){  // if the uart message is ready for check
+      switch(sysState){
+        case LOG_OFF:
+          if(!strncmp(mRsBuf,"#LG#",4)){
+            if(!strncmp(mRsBuf,"#LG#gary/123456",15)){
+              sysState=LOG_IN;
+              printf("Log in success!\r\n");
+            }
+            else{
+              attempts++;  
+              if(attempts==3){
+                sysState=SUSPEND;
+                printf("Suspended...\r\n");
+              }
+              else
+                printf("Username or password incorrect!\r\n");
+            }
+          }
+          else{
+            printf("Please Log in first\r\n");
+          }
+          break;
+        case LOG_IN:
+          if(!strncmp(mRsBuf,"#LG#",4))
+            printf("Already Logged in\r\n");
+          break;
+        case SUSPEND:
+          break;
+      }
+      
+        
+      if(mRsBuf[0]=='1')
+        fpOperation=1;
+      else if(mRsBuf[0]=='2')
+        fpOperation=2;
+      else if(mRsBuf[0]=='3')
+        fpOperation=3;
+      else;
+        //for(i=0;i<cmdLength+1;i++)
+          //printf("%c",mRsBuf[i]);
+          
+      
+      
+      
+      cmdReadyFlag=0;
+    }
+    OSTimeDlyHMSM(0, 0,0,100);
   }
 
 }
@@ -64,13 +137,16 @@ void Task_Comm(void *p_arg){
   (void)p_arg;
   
   while(1){
+    /*
     printf("\r\n Hi Professor Tim Woo \r\n");
     OSTimeDlyHMSM(0, 0,1,0);
     printf("\r\n Hi Fox \r\n");
     OSTimeDlyHMSM(0, 0,1,0);
     printf("\r\n Hi Gary \r\n");
     OSTimeDlyHMSM(0, 0,1,0);   
-    //OSTimeDlyHMSM(0, 0,1,0);
+    */
+    OSTimeDlyHMSM(0, 0,10,0);
+    
   }
 }
 
@@ -100,14 +176,14 @@ void Task_FP(void *p_arg){
     
     while(1)
     {	
-        switch(key_scan())
+        switch(fpOperation)
         {
             case 1:
-                printf("User:%d\r\n",GetUserCount());
+                printf("\r\nUser:%d\r\n",GetUserCount());
                 switch(AddUser(i)){
                     case ACK_SUCCESS:
                         i++;
-                        printf("Fingerprint added successfully!\r\n");
+                        printf("\r\nFingerprint added successfully!\r\n");
                         LED5_ON;	
                         OSTimeDlyHMSM(0, 0,0,500);
                         LED5_OFF;
@@ -117,7 +193,7 @@ void Task_FP(void *p_arg){
                         LED5_OFF;
                         break;                 
                     case ACK_FAIL: 			
-                        printf("Operation Failed.\r\n");
+                        printf("\r\nOperation Failed.\r\n");
                         LED6_ON;	
                         OSTimeDlyHMSM(0, 0,0,500);
                         LED6_OFF;
@@ -127,7 +203,7 @@ void Task_FP(void *p_arg){
                         LED6_OFF;
                         break;
                     case ACK_FULL:			
-                        printf("Database is full.\r\n");
+                        printf("\r\nDatabase is full.\r\n");
                         LED7_ON;	
                         OSTimeDlyHMSM(0, 0,0,500);
                         LED7_OFF;
@@ -141,7 +217,7 @@ void Task_FP(void *p_arg){
             case 2:
               switch(VerifyUser()){
                   case ACK_SUCCESS:	
-                      printf("Verification successful!\r\n");
+                      printf("\r\nVerification successful!\r\n");
                       LED5_ON;	
                       OSTimeDlyHMSM(0, 0,0,500);
                       LED5_OFF;
@@ -151,7 +227,7 @@ void Task_FP(void *p_arg){
                       LED5_OFF;
                       break;
                   case ACK_NO_USER:
-                      printf("No such user!\r\n");
+                      printf("\r\nNo such user!\r\n");
                       LED6_ON;	
                       OSTimeDlyHMSM(0, 0,0,500);
                       LED6_OFF;
@@ -161,7 +237,7 @@ void Task_FP(void *p_arg){
                       LED6_OFF;
                       break;
                   case ACK_TIMEOUT:	
-                      printf("Timeout!\r\n");
+                      printf("\r\nTimeout!\r\n");
                       LED7_ON;	
                       OSTimeDlyHMSM(0, 0,0,500);
                       LED7_OFF;
@@ -171,15 +247,16 @@ void Task_FP(void *p_arg){
                       LED7_OFF;
                       break;	
                   case ACK_GO_OUT:
-                      printf("GO OUT\r\n");
+                      printf("\r\nGO OUT\r\n");
                       break;
               };
               break;                                             
             case 3:
               ClearAllUser();
-              printf("All users have been cleared!\r\n");
+              printf("\r\nAll users have been cleared!\r\n");
               break;
         }
+      fpOperation=0;  
       OSTimeDlyHMSM(0, 0,1,0);
     }  
 #else 

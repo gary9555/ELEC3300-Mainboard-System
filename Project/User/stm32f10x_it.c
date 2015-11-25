@@ -150,17 +150,31 @@ void SysTick_Handler(void)
 
 extern u8 gRsLength;
 extern u8 gRsBuf[9];  // serial receiver buffer for FP
+
+
 extern u8 mRsLength;
-//extern u8 mRsBuf[196];   // serial receiver buffer for communication with terminal
+extern u8 mRsBuf[50];   // serial receiver buffer for communication with terminal
+static u8 startFlag=0;
+static char c; 
+extern u8 cmdLength;
+extern u8 cmdReadyFlag;
 
 void USART1_IRQHandler(void)
 {  	
   if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)
   { 
-   // mRsBuf[mRsLength] = USART_ReceiveData(USART1);	
-    //printf("%c",mRsBuf[mRsLength]);
-    //++mRsLength;
-    
+    if(!startFlag){
+       startFlag=1;
+       mRsLength=0;
+    }
+    c = USART_ReceiveData(USART1);	
+    if(c=='\n'){
+       startFlag=0;
+       cmdLength=mRsLength;
+       cmdReadyFlag=1;
+    }
+    mRsBuf[mRsLength]=c;
+    ++mRsLength;
   }
 	
 }
