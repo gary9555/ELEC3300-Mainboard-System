@@ -263,10 +263,10 @@ void EXTI0_IRQHandler(void)
     LCD_DrawChar(5, 48, hex[min0]);
     */
     
-    SysTick_Init();
+    //SysTick_Init();
     while(1)
     {
-      SysTickDelay_us(1000000-8559);
+      OSTimeDlyHMSM(0, 0,1,0);   
       if(min0==0)
       {
         min0= 9;

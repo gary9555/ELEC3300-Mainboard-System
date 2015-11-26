@@ -15,7 +15,7 @@ u8 mRsBuf[50];   // serial receiver buffer for communication with terminal
 u8 cmdLength;
 u8 cmdReadyFlag;     // set to 1 when command is ready to be processed by manager task
 
-
+extern int check_count;
 /*
 *********************************************************************************************************
 *                                      Static variables
@@ -38,28 +38,29 @@ static u8 num_user;
 void Task_Start(void *p_arg);
 static void Task_Manager(void *p_arg);    // in charge of the states and commands 
 static void Task_Update(void *p_arg);
-static void Task_Temp(void *p_arg);       // temperature management task
+//static void Task_Temp(void *p_arg);       // temperature management task
 static void Task_FP(void *p_arg);         // fingerprint
+static void Task_Curtain(void *p_arg);    // curtain with lcd ui control
 static void Task_LED(void *p_arg);        // breathing light
 
 
 // stack
 static OS_STK task_led_stk[TASK_LED_STK_SIZE];
 static OS_STK task_update_stk[TASK_UPDATE_STK_SIZE];
-static OS_STK task_temp_stk[TASK_TEMP_STK_SIZE];
+//static OS_STK task_temp_stk[TASK_TEMP_STK_SIZE];
 static OS_STK task_fp_stk[TASK_FP_STK_SIZE];
+static OS_STK task_curtain_stk[TASK_CURTAIN_STK_SIZE];
 static OS_STK task_manager_stk[TASK_MANAGER_STK_SIZE];
 
-// door open
-// air conditioner
 
+// the initial task which starts every other task
 void Task_Start(void *p_arg){
   
     (void)p_arg;   
     
     //OS_CPU_SysTickInit(); 
     
-    // create the manager for the whole system, it is a state machine
+     //create the manager for the whole system, it is a state machine
     OSTaskCreate(Task_Manager,(void *)0,  
                  &task_manager_stk[TASK_MANAGER_STK_SIZE-1], TASK_MANAGER_PRIO);
     
@@ -70,15 +71,20 @@ void Task_Start(void *p_arg){
     // create task temperature
     //OSTaskCreate(Task_Temp,(void *)0,  
       //           &task_temp_stk[TASK_TEMP_STK_SIZE-1], TASK_TEMP_PRIO);
-       
-    // create task led
-    OSTaskCreate(Task_LED,(void *)0,  
-                 &task_led_stk[TASK_LED_STK_SIZE-1], TASK_LED_PRIO);
     
     // create task fingerprint
     OSTaskCreate(Task_FP,(void *)0,  
                  &task_fp_stk[TASK_FP_STK_SIZE-1], TASK_FP_PRIO);
+    
+    // create task curtain
+    OSTaskCreate(Task_Curtain,(void *)0,  
+                 &task_curtain_stk[TASK_CURTAIN_STK_SIZE-1], TASK_CURTAIN_PRIO);
  
+    // create task led
+    OSTaskCreate(Task_LED,(void *)0,  
+                 &task_led_stk[TASK_LED_STK_SIZE-1], TASK_LED_PRIO);
+    
+    
     
     while (1){   
       OSTimeDlyHMSM(0, 0,10,0);	// don't need to do anything    
@@ -382,6 +388,157 @@ void Task_FP(void *p_arg){
     }
 #endif
 }
+
+extern TIM_OCInitTypeDef  TIM_OCInitStructure;
+
+void Task_Curtain(void *p_arg){
+  
+  (void)p_arg;
+  char hex[]="0123456789ABCDEF";
+  // int cursor_pos = 0, detect= 0;
+  int check_count = 0;
+  int h1=0, h0=0, min0=0, min1=0;
+  
+  while(1){ 
+   
+    if (KEY1){
+  
+  LCD_DrawChar(2, 16, '0');
+  LCD_DrawChar(2, 24, '0');
+  LCD_DrawChar(2, 32, ':');
+  LCD_DrawChar(2, 40, '0');
+  LCD_DrawChar(2, 48, '5');
+  LCD_DrawChar(2, 56, ' ');
+  LCD_DrawLine(33, 16, 33, 23);
+  LCD_DrawLine(32, 16, 32, 23);
+  
+  TIM_Cmd(TIM4, ENABLE);
+  OSTimeDlyHMSM(0, 0,2,0);   
+  TIM_Cmd(TIM4, DISABLE);
+  
+  
+    
+    
+  
+  /*       WAKEUP KEY (i.e. PA.0) is pressed.                  */
+  
+  while(1){
+        if((~(GPIOB->IDR>>13))&0x01)  
+        {
+          while((~(GPIOB->IDR>>13))&0x01);
+          left();
+        }
+        else if ((~(GPIOB->IDR>>12)&0x01))
+        {
+          while((~(GPIOB->IDR>>12))&0x01);
+          right();
+        }
+        else if ((~(GPIOB->IDR>>14)&0x01))
+        {
+          while((~(GPIOB->IDR>>14))&0x01);
+          up();
+        }
+        else if ((~(GPIOB->IDR>>15)&0x01))
+        {
+          while((~(GPIOB->IDR>>15))&0x01);
+          down();
+        }
+        else if ((~(GPIOB->IDR>>11)&0x01))
+        {
+          while((~(GPIOB->IDR>>11))&0x01);
+          set();
+          LCD_DrawLine(33, 16, 33, 23);
+          LCD_DrawLine(32, 16, 32, 23);
+          h1= detect_number();
+          right();
+          h0= detect_number();
+          right();
+          min1= detect_number();
+          right();
+          min0= detect_number();
+          set();
+          break;
+        }
+        else{}
+        OSTimeDlyHMSM(0, 0,0,500);
+  }
+        
+      
+      
+      /*
+      LCD_DrawChar(5, 16, hex[h1]);
+      LCD_DrawChar(5, 24, hex[h0]);
+      LCD_DrawChar(5, 32, ':');
+      LCD_DrawChar(5, 40, hex[min1]);
+      LCD_DrawChar(5, 48, hex[min0]);
+      */
+      
+      //SysTick_Init();
+      while(1)
+      {
+        OSTimeDlyHMSM(0, 0,1,0);   
+        if(min0==0)
+        {
+          min0= 9;
+          if(min1==0)
+          {
+           min1= 5; 
+           if(h0==0)
+           {
+             h0= 9;
+             if(h1==0)
+             {
+               // finish count
+               check_count= 1;
+               break;
+             }
+             else
+               h1--;
+           }
+           else
+             h0--;
+          }
+          else
+            min1--;
+        }
+        else
+          min0--;
+        LCD_EraseChar(2, 48);
+        LCD_DrawChar(2, 48, hex[min0]);
+        LCD_EraseChar(2, 40);
+        LCD_DrawChar(2, 40, hex[min1]);
+        LCD_EraseChar(2, 24);
+        LCD_DrawChar(2, 24, hex[h0]);
+        LCD_EraseChar(2, 16);
+        LCD_DrawChar(2, 16, hex[h1]);
+      }    
+      check_count= 1;
+    }
+    
+      if(check_count){
+        LCD_EraseChar(2, 48);
+        LCD_EraseChar(2, 40);
+        LCD_EraseChar(2, 32);
+        LCD_EraseChar(2, 24);
+        LCD_EraseChar(2, 16);
+        print_screen();
+        
+        TIM_OCInitStructure.TIM_Pulse = 1; //<- TIMx_CCRx register
+        TIM_OC1Init(TIM4, &TIM_OCInitStructure);
+        TIM_Cmd(TIM4, ENABLE);
+        OSTimeDlyHMSM(0, 0,2,0);
+        TIM_Cmd(TIM4, DISABLE);
+        
+        TIM_OCInitStructure.TIM_Pulse = 3; //<- TIMx_CCRx register
+        TIM_OC1Init(TIM4, &TIM_OCInitStructure);
+        
+        check_count= 0;
+      }
+      OSTimeDlyHMSM(0, 0,1,0);
+  }
+   
+}
+
 
 // a simple breath led
 void Task_LED(void *p_arg){

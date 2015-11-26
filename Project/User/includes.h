@@ -18,7 +18,6 @@
 //#include "usart1.h"
 #include "lcd.h"
 #include "misc.h"
-#include "stm32f10x_usart.h"
 #include "fingerprint.h"
 
 #include "stm32f10x_it.h"
@@ -27,9 +26,11 @@
 #include "SysTick.h"
 #include "DS18B20.h"
 
+
+
 #define DOOR_UNLOCK   GPIO_SetBits(GPIOA, GPIO_Pin_5)
 #define DOOR_LOCK     GPIO_ResetBits(GPIOA, GPIO_Pin_5)
-#define DOOR_OPEN     !GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_6)
+#define DOOR_OPEN     !GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_7)
 
 #define LED4_ON	    GPIO_SetBits(GPIOF, GPIO_Pin_9)
 #define LED4_OFF    GPIO_ResetBits(GPIOF, GPIO_Pin_9)

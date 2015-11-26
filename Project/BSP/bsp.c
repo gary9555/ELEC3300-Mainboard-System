@@ -15,13 +15,72 @@ void BSP_Init(void){
   GPIO_Configuration();
   
   //ADC_Configuration();
-    
+  TIM_Configuration();
   // init uart
   NVIC_Configuration();
   //ds18b20_start();
   USART_Config(57600,19200);
 }
 
+TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+TIM_OCInitTypeDef  TIM_OCInitStructure;
+
+void TIM_Configuration(void){
+    GPIO_InitTypeDef GPIO_InitStructure;
+     // initialize pwm output(master tim) pin pa.6
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|RCC_APB2Periph_AFIO, ENABLE);
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+  
+   // initialize pwm output pin pb.6
+   RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB|RCC_APB2Periph_AFIO, ENABLE);
+   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
+   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+   GPIO_Init(GPIOB, &GPIO_InitStructure);
+   
+   // enable tim3 (1kHz)
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
+  TIM_TimeBaseStructure.TIM_Period = 999; //<- TIMx_ARR register
+  TIM_TimeBaseStructure.TIM_Prescaler = 71;
+  TIM_TimeBaseStructure.TIM_ClockDivision = 0;
+  TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+  TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
+  
+  
+  TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
+  TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+  TIM_OCInitStructure.TIM_Pulse = 500; //<- TIMx_CCRx register
+  TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+  TIM_OC1Init(TIM3, &TIM_OCInitStructure);
+  
+  TIM_Cmd(TIM3, ENABLE);
+  
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
+      
+      TIM_SelectMasterSlaveMode(TIM3, TIM_MasterSlaveMode_Enable);
+      TIM_SelectOutputTrigger(TIM3, TIM_TRGOSource_Update);
+          
+          
+      TIM_TimeBaseStructure.TIM_Period = 19; //<- TIMx_ARR register
+      TIM_TimeBaseStructure.TIM_Prescaler = 0;
+      TIM_TimeBaseStructure.TIM_ClockDivision = 0;
+      TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+      TIM_TimeBaseInit(TIM4, &TIM_TimeBaseStructure);
+      
+      TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
+      TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+      TIM_OCInitStructure.TIM_Pulse = 3; //<- TIMx_CCRx register
+      TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+      TIM_OC1Init(TIM4, &TIM_OCInitStructure);
+      
+      TIM_SelectSlaveMode(TIM4, TIM_SlaveMode_Gated);
+      TIM_SelectInputTrigger(TIM4, TIM_TS_ITR2);
+  
+  
+}
 
 void SysTick_init(void){ 
   SysTick_Config(SystemFrequency/OS_TICKS_PER_SEC);// init and enable Systick  
@@ -56,6 +115,10 @@ void RCC_Init(void){
                            RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD |
                            RCC_APB2Periph_GPIOE | RCC_APB2Periph_GPIOF | 
                            RCC_APB2Periph_GPIOG, DISABLE);  
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB |
+                           RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD |
+                           RCC_APB2Periph_GPIOE | RCC_APB2Periph_GPIOF | 
+                           RCC_APB2Periph_GPIOG, ENABLE);  
 }
 
 /**
